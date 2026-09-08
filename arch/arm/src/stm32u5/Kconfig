@@ -1,0 +1,210 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+if ARCH_CHIP_STM32U5
+
+comment "STM32U5 Configuration Options"
+
+config STM32_U5_PERIPHERALS
+	bool
+	default y
+	select STM32_HAVE_COMP
+	select STM32_HAVE_CRS
+	select STM32_HAVE_DAC1
+	select STM32_HAVE_DMA2D
+	select STM32_HAVE_FMAC
+	select STM32_HAVE_FSMC
+	select STM32_HAVE_HASH
+	select STM32_HAVE_I2C1
+	select STM32_HAVE_I2C2
+	select STM32_HAVE_I2C3
+	select STM32_HAVE_I2C4
+	select STM32_HAVE_LPTIM1
+	select STM32_HAVE_LPTIM3
+	select STM32_HAVE_LPTIM4
+	select STM32_HAVE_LPUART1
+	select STM32_HAVE_OTGFS if STM32_STM32U535XX || CONFIG_STM32_STM32U545XX || STM32_STM32U575XX || STM32_STM32U585XX
+	select STM32_HAVE_RNG
+	select STM32_HAVE_SAI1
+	select STM32_HAVE_SAI2
+	select STM32_HAVE_SDMMC1
+	select STM32_HAVE_SDMMC2
+	select STM32_HAVE_SPI1
+	select STM32_HAVE_SPI2
+	select STM32_HAVE_SPI3
+	select STM32_HAVE_SYSCFG
+	select STM32_HAVE_TSC
+	select STM32_HAVE_UART4
+	select STM32_HAVE_UART5
+	select STM32_HAVE_USART1
+	select STM32_HAVE_USART2
+	select STM32_HAVE_USART3
+	select STM32_HAVE_GPADMA1
+	select STM32_HAVE_MDF1
+	select STM32_HAVE_FLASH
+	select STM32_HAVE_RAMCFG
+	select STM32_HAVE_GTZC1
+	select STM32_HAVE_GTZC2
+	select STM32_HAVE_DCACHE1
+	select STM32_HAVE_SRAM1
+	select STM32_HAVE_SRAM2
+	select STM32_HAVE_SRAM3
+	select STM32_HAVE_SRAM5
+	select STM32_HAVE_DCMI_PSSI
+	select STM32_HAVE_PKA
+	select STM32_HAVE_SAES
+	select STM32_HAVE_OCTOSPIM
+	select STM32_HAVE_OTFDEC1
+	select STM32_HAVE_OTFDEC2
+	select STM32_HAVE_OCTOSPI1
+	select STM32_HAVE_OCTOSPI2
+	select STM32_HAVE_LPGPIO1
+	select STM32_HAVE_LPDMA1
+	select STM32_HAVE_ADF1
+	select STM32_HAVE_UCPD1
+	select STM32_HAVE_VREF
+	select STM32_HAVE_RTCAPB
+	select STM32_HAVE_RTC_MAGIC
+	select STM32_HAVE_CRC
+	select STM32_HAVE_PWR
+	select STM32_HAVE_BKPSRAM
+	select STM32_HAVE_IP_WDG_M3M4_V1
+
+choice
+	prompt "STM32 U5 Chip Selection"
+	default ARCH_CHIP_STM32U585AI
+	depends on ARCH_CHIP_STM32U5
+
+config ARCH_CHIP_STM32U585AI
+	bool "STM32U585AI"
+	select STM32_STM32U585XX
+	select STM32_FLASH_CONFIG_I
+	select STM32U5_IO_CONFIG_A
+	---help---
+		STM32 U5 Cortex M33, 2048 Kb FLASH, 768 Kb SRAM
+
+config ARCH_CHIP_STM32U5A5ZJT
+	bool "STM32U5A5ZJT"
+	select STM32_STM32U5A5XX
+	select STM32U5_IO_CONFIG_A
+	---help---
+	STM32 U5 Cortex M33, 4096 Kb FLASH, 2500 Kb SRAM, tqfp144
+
+endchoice # STM32 U5 Chip Selection
+
+# Chip families:
+
+# STM32U575 and STM32U585 devices documented in RM0456
+config STM32_STM32U5A5XX
+	bool
+	default n
+	select STM32_HAVE_OTGHS
+	select ARCH_HAVE_FPU
+	select STM32_HAVE_AES
+	select STM32_HAVE_CORDIC
+	select STM32_HAVE_IP_AES_M3M4_V1
+	select STM32_HAVE_IP_CORDIC_M3M4_V1
+	select STM32_HAVE_LPUART1
+	select STM32_HAVE_USART1
+	select STM32_HAVE_USART2
+	select STM32_HAVE_USART3
+	select STM32_HAVE_UART4
+	select STM32_HAVE_UART5
+	select STM32_HAVE_FDCAN1
+	select STM32_HAVE_TIM1
+	select STM32_HAVE_TIM2
+	select STM32_HAVE_TIM3
+	select STM32_HAVE_TIM4
+	select STM32_HAVE_TIM5
+	select STM32_HAVE_TIM6
+	select STM32_HAVE_TIM7
+	select STM32_HAVE_TIM8
+	select STM32_HAVE_TIM15
+	select STM32_HAVE_TIM16
+	select STM32_HAVE_TIM17
+	select STM32_HAVE_I2C5
+	select STM32_HAVE_I2C6
+
+# STM32U575 and STM32U585 devices documented in RM0456
+config STM32_STM32U585XX
+	bool
+	default n
+	select ARCH_HAVE_FPU
+	select STM32_HAVE_AES
+	select STM32_HAVE_CORDIC
+	select STM32_HAVE_IP_AES_M3M4_V1
+	select STM32_HAVE_IP_CORDIC_M3M4_V1
+	select STM32_HAVE_LPUART1
+	select STM32_HAVE_USART1
+	select STM32_HAVE_USART2
+	select STM32_HAVE_USART3
+	select STM32_HAVE_UART4
+	select STM32_HAVE_UART5
+	select STM32_HAVE_FDCAN1
+	select STM32_HAVE_TIM1
+	select STM32_HAVE_TIM2
+	select STM32_HAVE_TIM3
+	select STM32_HAVE_TIM4
+	select STM32_HAVE_TIM5
+	select STM32_HAVE_TIM6
+	select STM32_HAVE_TIM7
+	select STM32_HAVE_TIM8
+	select STM32_HAVE_TIM15
+	select STM32_HAVE_TIM16
+	select STM32_HAVE_TIM17
+
+# Pin/package configurations
+
+config STM32U5_IO_CONFIG_K
+	# Package designator K
+	bool
+	default n
+
+config STM32U5_IO_CONFIG_T
+	# Package designator T
+	bool
+	default n
+
+config STM32U5_IO_CONFIG_C
+	# Package designator C
+	bool
+	default n
+
+config STM32U5_IO_CONFIG_R
+	# Package designator R
+	bool
+	default n
+
+config STM32U5_IO_CONFIG_J
+	# Package designator J
+	bool
+	default n
+
+config STM32U5_IO_CONFIG_M
+	# Package designator M
+	bool
+	default n
+
+config STM32U5_IO_CONFIG_V
+	# Package designator V
+	bool
+	default n
+
+config STM32U5_IO_CONFIG_Q
+	# Package designator Q
+	bool
+	default n
+
+config STM32U5_IO_CONFIG_Z
+	# Package designator Z
+	bool
+	default n
+
+config STM32U5_IO_CONFIG_A
+	# Package designator A
+	bool
+	default n
+
+endif # ARCH_CHIP_STM32U5

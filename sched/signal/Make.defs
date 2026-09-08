@@ -1,0 +1,48 @@
+############################################################################
+# sched/signal/Make.defs
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.  The
+# ASF licenses this file to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance with the
+# License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+############################################################################
+
+CSRCS += sig_nanosleep.c sig_sleep.c sig_usleep.c sig_clockwait.c
+CSRCS += sig_kill.c sig_tgkill.c
+
+ifneq ($(CONFIG_DISABLE_ALL_SIGNALS),y)
+CSRCS += sig_dispatch.c sig_lowest.c
+CSRCS += sig_notification.c sig_pause.c sig_ppoll.c sig_procmask.c
+CSRCS += sig_pselect.c sig_queue.c  sig_suspend.c
+CSRCS += sig_timedwait.c sig_waitinfo.c
+CSRCS += sig_cleanup.c sig_initialize.c sig_pending.c
+CSRCS += sig_releasependingsignal.c sig_removependingsignal.c
+CSRCS += sig_unmaskpendingsignal.c
+endif
+
+ifeq ($(CONFIG_ENABLE_ALL_SIGNALS),y)
+CSRCS += sig_action.c sig_allocpendingsigaction.c sig_deliver.c
+CSRCS += sig_findaction.c sig_releasependingsigaction.c
+endif
+
+ifeq ($(CONFIG_SIG_DEFAULT),y)
+CSRCS += sig_default.c
+endif
+
+# Include signal build support
+
+DEPPATH += --dep-path signal
+VPATH += :signal

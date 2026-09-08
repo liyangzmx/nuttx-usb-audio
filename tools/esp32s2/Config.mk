@@ -1,0 +1,361 @@
+############################################################################
+# tools/esp32s2/Config.mk
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.  The
+# ASF licenses this file to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance with the
+# License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+############################################################################
+
+# MCUBoot requires a region in flash for the E-Fuse virtual mode.
+# To avoid erasing this region, flash a dummy empty file to the
+# virtual E-Fuse offset.
+
+VIRTUAL_EFUSE_BIN := vefuse.bin
+
+# These are the macros that will be used in the NuttX make system to compile
+# and assemble source files and to insert the resulting object files into an
+# archive.  These replace the default definitions at tools/Config.mk
+
+ifeq ($(CONFIG_ESP32S2_FLASH_2M),y)
+	FLASH_SIZE := 2MB
+else ifeq ($(CONFIG_ESP32S2_FLASH_4M),y)
+	FLASH_SIZE := 4MB
+else ifeq ($(CONFIG_ESP32S2_FLASH_8M),y)
+	FLASH_SIZE := 8MB
+else ifeq ($(CONFIG_ESP32S2_FLASH_16M),y)
+	FLASH_SIZE := 16MB
+endif
+
+ifeq ($(CONFIG_ESPRESSIF_FLASH_MODE_DIO),y)
+	FLASH_MODE := dio
+else ifeq ($(CONFIG_ESPRESSIF_FLASH_MODE_DOUT),y)
+	FLASH_MODE := dout
+else ifeq ($(CONFIG_ESPRESSIF_FLASH_MODE_QIO),y)
+	FLASH_MODE := qio
+else ifeq ($(CONFIG_ESPRESSIF_FLASH_MODE_QOUT),y)
+	FLASH_MODE := qout
+endif
+
+FLASH_FREQ := $(CONFIG_ESPRESSIF_FLASH_FREQ)
+
+ifeq ($(CONFIG_ESP32S2_FLASH_DETECT),y)
+	ESPTOOL_WRITEFLASH_OPTS := -fs detect -fm dio -ff $(FLASH_FREQ)
+else
+	ESPTOOL_WRITEFLASH_OPTS := -fs $(FLASH_SIZE) -fm dio -ff $(FLASH_FREQ)
+endif
+
+ifeq ($(CONFIG_ESP32S2_SECURE_FLASH_ENC_FLASH_DEVICE_ENCRYPTED),y)
+	ESPTOOL_WRITEFLASH_OPTS += --encrypt
+endif
+
+ifneq ($(CONFIG_ESP32S2_SECURE_BOOT)$(CONFIG_ESP32S2_SECURE_FLASH_ENC_ENABLED),)
+	ESPTOOL_RESET_OPTS += --after no_reset
+endif
+
+ESPTOOL_FLASH_OPTS := -fs $(FLASH_SIZE) -fm $(FLASH_MODE) -ff $(FLASH_FREQ)
+
+define MAKE_VIRTUAL_EFUSE_BIN
+	$(Q)if [ ! -f "$(VIRTUAL_EFUSE_BIN)" ]; then \
+		dd if=/dev/zero of=$(VIRTUAL_EFUSE_BIN) count=0 status=none; \
+	fi
+endef
+
+# Configure the variables according to build environment
+
+ESPTOOL_MIN_VERSION := 4.8.0
+
+ifdef ESPTOOL_BINDIR
+	ifeq ($(CONFIG_ESP32S2_APP_FORMAT_MCUBOOT),y)
+		BL_OFFSET        := 0x1000
+
+		ifeq ($(CONFIG_ESP32S2_SECURE_BOOT),y)
+			BOOTLOADER   := $(ESPTOOL_BINDIR)/mcuboot-esp32s2.signed.bin
+		else
+			BOOTLOADER   := $(ESPTOOL_BINDIR)/mcuboot-esp32s2.bin
+		endif
+
+		FLASH_BL         := $(BL_OFFSET) $(BOOTLOADER)
+
+		ifneq ($(CONFIG_ESP32S2_SECURE_BOOT),)
+			ESPTOOL_BINS :=
+		else
+			ESPTOOL_BINS := $(FLASH_BL)
+		endif
+	endif
+endif
+
+ifeq ($(CONFIG_ESP32S2_APP_FORMAT_MCUBOOT),y)
+
+	ESPTOOL_BINS += $(CONFIG_ESPRESSIF_EFUSE_VIRTUAL_KEEP_IN_FLASH_OFFSET) $(VIRTUAL_EFUSE_BIN)
+
+	ifeq ($(CONFIG_ESP32S2_ESPTOOL_TARGET_PRIMARY),y)
+		VERIFIED   := --confirm
+		APP_OFFSET := $(CONFIG_ESPRESSIF_OTA_PRIMARY_SLOT_OFFSET)
+	else ifeq ($(CONFIG_ESP32S2_ESPTOOL_TARGET_SECONDARY),y)
+		VERIFIED   :=
+		APP_OFFSET := $(CONFIG_ESPRESSIF_OTA_SECONDARY_SLOT_OFFSET)
+	endif
+
+	ifeq ($(CONFIG_ESP32S2_SECURE_BOOT),y)
+		APP_IMAGE  := nuttx.signed.bin
+	else
+		APP_IMAGE  := nuttx.bin
+	endif
+
+	FLASH_APP      := $(APP_OFFSET) $(APP_IMAGE)
+
+	ifeq ($(CONFIG_ESP32S2_SECURE_FLASH_ENC_ENABLED),y)
+		ifeq ($(CONFIG_ESPRESSIF_SPIFLASH),y)
+			ENC_APP := $(CONFIG_ESPRESSIF_STORAGE_MTD_OFFSET) enc_mtd.bin
+		endif
+	endif
+
+	ifeq ($(CONFIG_ESP32S2_SECURE_FLASH_ENC_ENABLED),y)
+		IMGTOOL_ALIGN_ARGS := --align 32 --max-align 32
+	else
+		IMGTOOL_ALIGN_ARGS := --align 4
+	endif
+
+	IMGTOOL_SIGN_ARGS := --pad $(VERIFIED) $(IMGTOOL_ALIGN_ARGS) -v 0 -s auto \
+		-H $(CONFIG_ESP32S2_APP_MCUBOOT_HEADER_SIZE) --pad-header \
+		-S $(CONFIG_ESPRESSIF_OTA_SLOT_SIZE)
+else
+#   CONFIG_ESPRESSIF_SIMPLE_BOOT
+
+	APP_OFFSET     := 0x1000
+	APP_IMAGE      := nuttx.bin
+	FLASH_APP      := $(APP_OFFSET) $(APP_IMAGE)
+	ESPTOOL_BINDIR := .
+endif
+
+ESPTOOL_BINS += $(FLASH_APP) $(ENC_APP)
+
+# Commands for colored and formatted output
+
+RED    = \033[1;31m
+YELLOW = \033[1;33m
+BOLD   = \033[1m
+RST    = \033[0m
+
+# Functions for printing help messages
+
+define HELP_SIGN_APP
+	$(Q) echo ""
+	$(Q) echo "$(YELLOW)Application not signed. Sign the application before flashing.$(RST)"
+	$(Q) echo "To sign the application, you can use this command:"
+	$(Q) echo "    imgtool sign -k $(ESPSEC_KEYDIR)/$(CONFIG_ESP32S2_SECURE_BOOT_APP_SIGNING_KEY) --public-key-format hash $(IMGTOOL_SIGN_ARGS) nuttx.hex nuttx.signed.bin"
+	$(Q) echo ""
+endef
+
+# Commands for colored and formatted output
+
+RED    = \033[1;31m
+YELLOW = \033[1;33m
+BOLD   = \033[1m
+RST    = \033[0m
+
+# Flash encryption procedure
+
+define FLASH_ENC
+	$(Q) echo -e "$(YELLOW)Flash Encryption is enabled!$(RST)";
+
+	$(Q) if [ "$(CONFIG_ESPRESSIF_EFUSE_VIRTUAL)" = "y" ]; then \
+		echo -e "$(YELLOW)WARN: Virtual E-Fuses are enabled! E-Fuses will not be burned. $(RST)"; \
+	fi
+
+	$(Q) if [ "$(CONFIG_ESP32S2_SECURE_FLASH_ENC_USE_HOST_KEY)" = "y" ]; then \
+		if [ ! -f "$(CONFIG_ESP32S2_SECURE_FLASH_ENC_HOST_KEY_NAME)" ]; then \
+			echo -e "$(RED)FLASH ENCRYPTION error: Key file '$(CONFIG_ESP32S2_SECURE_FLASH_ENC_HOST_KEY_NAME)' not found.$(RST)"; \
+			echo -e "$(YELLOW)Generate the encryption key using: espsecure.py generate_flash_encryption_key <key_name.bin>$(RST)"; \
+			echo -e "$(YELLOW)Refer to the documentation on flash encryption before proceeding.$(RST)"; \
+			exit 1; \
+		fi; \
+	fi
+
+	$(Q) if [ "$(CONFIG_ESPRESSIF_SPIFLASH)" = "y" ]; then \
+		echo "Applying encryption to user MTD partition on flash."; \
+		if [ ! -f "$(CONFIG_ESP32S2_SECURE_FLASH_ENC_HOST_KEY_NAME)" ]; then \
+			echo -e "$(RED)Flash encryption key is required for user MTD partition encryption. Key file: '$(CONFIG_ESP32S2_SECURE_FLASH_ENC_HOST_KEY_NAME)'$(RST)"; \
+			echo -e "$(RED)Make sure CONFIG_ESP32S2_SECURE_FLASH_ENC_HOST_KEY_NAME is set or disable SPI Flash.$(RST)"; \
+			exit 1; \
+		fi; \
+		size_int=$$(( $(CONFIG_ESPRESSIF_STORAGE_MTD_SIZE) )); \
+		echo -e "Encrypting user MTD partition offset: $(CONFIG_ESPRESSIF_STORAGE_MTD_OFFSET), size: $(CONFIG_ESPRESSIF_STORAGE_MTD_SIZE) ($$size_int)"; \
+		dd if=/dev/zero ibs=1 count=$$size_int | LC_ALL=C tr "\000" "\377" > blank_mtd.bin; \
+        espsecure.py encrypt_flash_data --aes_xts --keyfile $(CONFIG_ESP32S2_SECURE_FLASH_ENC_HOST_KEY_NAME) --address 0 --output enc_mtd.bin blank_mtd.bin; \
+		rm blank_mtd.bin; \
+	fi
+
+endef
+
+# BURN_EFUSES -- Burn the flash encryption key E-Fuses if: not already burned, not virtual, not device already encrypted
+
+define BURN_EFUSES
+	$(Q) if [ "$(CONFIG_ESP32S2_SECURE_FLASH_ENC_FLASH_DEVICE_ENCRYPTED)" = "y" ]; then \
+		echo -e "$(YELLOW)WARN: Device is already encrypted. Skipping flash encryption key burning. $(RST)"; \
+	elif [ "$(CONFIG_ESPRESSIF_EFUSE_VIRTUAL)" = "y" ]; then \
+		echo -e "$(YELLOW)WARN: Virtual E-Fuses are enabled! Skipping flash encryption key burning. $(RST)"; \
+	else \
+		if [ "$(CONFIG_ESP32S2_SECURE_FLASH_ENC_USE_HOST_KEY)" = "y" ]; then \
+			echo -e "$(YELLOW)Proceeding will burn the flash encryption key E-Fuses using: $(CONFIG_ESP32S2_SECURE_FLASH_ENC_HOST_KEY_NAME).$(RST)"; \
+		else \
+			echo -e "$(YELLOW)Proceeding will burn a *randomly generated* flash encryption key (NOT user-provided).$(RST)"; \
+		fi; \
+		echo -e "$(YELLOW)This operation is NOT REVERSIBLE! Make sure to have read the documentation.$(RST)"; \
+		efuse_summary=$$(espefuse.py --port $(ESPTOOL_PORT) summary | grep -A 1 BLOCK1); \
+		if echo "$$efuse_summary" | grep -q '?? ??'; then \
+			echo -e "$(YELLOW)Encryption key already burned. Skipping...$(RST)"; \
+		else \
+			echo -e "$(YELLOW)Burning flash encryption key...$(RST)"; \
+			if [ -z "$(NOCHECK)" ] ; then \
+				espefuse.py --port $(ESPTOOL_PORT) burn_key BLOCK_KEY0 $(CONFIG_ESP32S2_SECURE_FLASH_ENC_HOST_KEY_NAME) XTS_AES_128_KEY; \
+			else \
+				espefuse.py --do-not-confirm --port $(ESPTOOL_PORT) burn_key BLOCK_KEY0 $(CONFIG_ESP32S2_SECURE_FLASH_ENC_HOST_KEY_NAME) XTS_AES_128_KEY; \
+			fi; \
+		fi; \
+	fi
+endef
+
+# MERGEBIN -- Merge raw binary files into a single file
+
+define MERGEBIN
+	@python3 tools/espressif/check_esptool.py -v $(ESPTOOL_MIN_VERSION)
+	$(Q) if [ -z $(ESPTOOL_BINDIR) ]; then \
+		echo "MERGEBIN error: Missing argument for binary files directory."; \
+		echo "USAGE: make ESPTOOL_BINDIR=<dir>"; \
+		exit 1; \
+	fi
+	$(Q) if [ -z $(FLASH_SIZE) ]; then \
+		echo "Missing Flash memory size configuration for the ESP32-S2 chip."; \
+		exit 1; \
+	fi
+	esptool.py -c esp32s2 merge_bin --output nuttx.merged.bin $(ESPTOOL_FLASH_OPTS) $(ESPTOOL_BINS)
+	$(Q) echo nuttx.merged.bin >> nuttx.manifest
+	$(Q) echo "Generated: nuttx.merged.bin"
+endef
+
+# SIGNBIN -- Create the signed binary image file for Secure Boot
+
+define SIGNBIN
+	$(Q) echo "SIGNBIN: ESP32-S2 signed binary"
+	$(Q) if ! imgtool version 1>/dev/null 2>&1; then \
+		echo ""; \
+		echo "imgtool not found.  Please run: \"pip install imgtool\""; \
+		echo ""; \
+		echo "Run make again to create the nuttx.signed.bin image."; \
+		exit 1; \
+	fi
+	$(Q) if [ -z "$(ESPSEC_KEYDIR)" ]; then \
+		echo "SIGNBIN error: Missing argument for secure boot keys directory."; \
+		echo "USAGE: make ESPSEC_KEYDIR=<dir>"; \
+		exit 1; \
+	fi
+
+	$(eval APP_SIGN_KEY := $(ESPSEC_KEYDIR)/$(subst ",,$(CONFIG_ESP32S2_SECURE_BOOT_APP_SIGNING_KEY)))
+	$(Q) if [ ! -f "$(APP_SIGN_KEY)" ]; then \
+		echo ""; \
+		echo "$(RED)SIGNBIN error:$(RST) Application signing key $(BOLD)$(CONFIG_ESP32S2_SECURE_BOOT_APP_SIGNING_KEY)$(RST) does not exist."; \
+		echo "Generate using:"; \
+		echo "    imgtool keygen --key $(CONFIG_ESP32S2_SECURE_BOOT_APP_SIGNING_KEY) --type <ESP32S2_SECURE_SIGNED_APPS_SCHEME>"; \
+		echo ""; \
+		exit 1; \
+	fi
+
+	imgtool sign $(IMGTOOL_KEY_ARGS) $(IMGTOOL_SIGN_ARGS) nuttx.hex nuttx.signed.bin
+	$(Q) echo nuttx.signed.bin >> nuttx.manifest
+	$(Q) echo "Generated: nuttx.signed.bin (MCUboot compatible)"
+endef
+
+# MKIMAGE -- Convert an ELF file into a compatible binary file
+
+ifeq ($(CONFIG_ESP32S2_SECURE_BOOT),y)
+define MKIMAGE
+	$(if $(CONFIG_ESP32S2_SECURE_BOOT_BUILD_SIGNED_BINARIES),$(call SIGNBIN),$(call HELP_SIGN_APP))
+endef
+else
+ifeq ($(CONFIG_ESP32S2_APP_FORMAT_MCUBOOT),y)
+define MKIMAGE
+	$(Q) echo "MKIMAGE: ESP32-S2 binary"
+	$(Q) if ! imgtool version 1>/dev/null 2>&1; then \
+		echo ""; \
+		echo "imgtool not found.  Please run: \"pip install imgtool\""; \
+		echo ""; \
+		echo "Run make again to create the nuttx.bin image."; \
+		exit 1; \
+	fi
+	imgtool sign $(IMGTOOL_SIGN_ARGS) nuttx.hex nuttx.bin
+	$(Q) echo nuttx.bin >> nuttx.manifest
+	$(Q) echo "Generated: nuttx.bin (MCUboot compatible)"
+endef
+else
+define MKIMAGE
+	$(Q) echo "MKIMAGE: ESP32-S2 binary"
+	@python3 tools/espressif/check_esptool.py -v $(ESPTOOL_MIN_VERSION)
+	$(Q) if [ -z $(FLASH_SIZE) ]; then \
+		echo "Missing Flash memory size configuration."; \
+		exit 1; \
+	fi
+	$(eval ELF2IMAGE_OPTS := $(if $(CONFIG_ESPRESSIF_SIMPLE_BOOT),--ram-only-header) -fs $(FLASH_SIZE) -fm $(FLASH_MODE) -ff $(FLASH_FREQ))
+	esptool.py -c esp32s2 elf2image $(ELF2IMAGE_OPTS) -o nuttx.bin nuttx
+	$(Q) echo nuttx.bin >> nuttx.manifest
+	$(Q) echo "Generated: nuttx.bin"
+endef
+endif
+endif
+
+# MAKEUF2 -- Merge raw binary files into uf2 format
+
+define MAKEUF2
+	esptool.py -c $(CHIP_SERIES) merge_bin --format uf2 -o nuttx.merged.uf2 -fs $(FLASH_SIZE) -fm $(FLASH_MODE) $(ESPTOOL_BINS)
+	$(Q) echo "Generated: nuttx.merged.uf2"
+endef
+
+# POSTBUILD -- Perform post build operations
+
+define POSTBUILD
+	$(call MKIMAGE)
+	$(if $(CONFIG_ESPRESSIF_BOOTLOADER_MCUBOOT),$(call MAKE_VIRTUAL_EFUSE_BIN))
+	$(if $(CONFIG_ESP32S2_SECURE_FLASH_ENC_ENABLED),$(call FLASH_ENC))
+	$(if $(CONFIG_ESP32S2_MERGE_BINS),$(call MERGEBIN))
+	$(if $(UF2),$(call MAKEUF2))
+endef
+
+# ESPTOOL_BAUD -- Serial port baud rate used when flashing/reading via esptool.py
+
+ESPTOOL_BAUD ?= 921600
+
+# FLASH -- Download a binary image via esptool.py
+
+define FLASH
+	$(Q) if [ -z $(ESPTOOL_PORT) ]; then \
+		echo "FLASH error: Missing serial port device argument."; \
+		echo "USAGE: make flash ESPTOOL_PORT=<port> [ ESPTOOL_BAUD=<baud> ] [ ESPTOOL_BINDIR=<dir> ]"; \
+		exit 1; \
+	fi
+
+	$(if $(CONFIG_ESP32S2_SECURE_FLASH_ENC_ENABLED),$(call BURN_EFUSES))
+	$(eval ESPTOOL_OPTS := -c esp32s2 -p $(ESPTOOL_PORT) -b $(ESPTOOL_BAUD) $(ESPTOOL_RESET_OPTS) $(if $(CONFIG_ESP32S2_ESPTOOLPY_NO_STUB),--no-stub))
+
+	$(Q) if [ -z $(UF2) ]; then \
+		esptool.py $(ESPTOOL_OPTS) write_flash $(ESPTOOL_WRITEFLASH_OPTS) $(ESPTOOL_BINS); \
+	else \
+		echo "Flashing using UF2 file."; \
+		cp nuttx.merged.uf2 $(ESPTOOL_PORT); \
+		sync; \
+	fi
+
+endef

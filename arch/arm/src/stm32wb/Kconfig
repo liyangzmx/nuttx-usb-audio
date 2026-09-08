@@ -1,0 +1,277 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+if ARCH_CHIP_STM32WB
+
+comment "STM32WB Configuration Options"
+
+config STM32_WB_PERIPHERALS
+	bool
+	default ARCH_CHIP_STM32WB
+	select STM32_HAVE_BLE
+	select STM32_HAVE_DMA1
+	select STM32_HAVE_MBOX
+	select STM32_HAVE_IPCC
+	select STM32_HAVE_SRAM2A
+	select STM32_HAVE_SRAM2B
+	select STM32_HAVE_I2C1
+	select STM32_HAVE_LPTIM1
+	select STM32_HAVE_LPUART1 if STM32_HAVE_LPUART
+	select STM32_HAVE_RTC_SUBSECONDS
+	select STM32_HAVE_RTC_MAGIC
+	select STM32_HAVE_RTC
+	select STM32_HAVE_CRC
+	select STM32_HAVE_PWR
+	select STM32_HAVE_SPI1
+	select STM32_HAVE_SYSCFG
+	select STM32_HAVE_USART1
+
+choice
+	prompt "STM32 WB Chip Selection"
+	default ARCH_CHIP_STM32WB55RG
+	depends on ARCH_CHIP_STM32WB
+
+config ARCH_CHIP_STM32WB10CC
+	bool "STM32WB10CC"
+	select STM32_STM32WB10
+	select STM32WB_IO_CONFIG_C
+	select STM32_FLASH_CONFIG_C_320
+	---help---
+		STM32 WB Cortex M4, 320 Kb FLASH, 12+32+4 Kb SRAM
+
+config ARCH_CHIP_STM32WB15CC
+	bool "STM32WB15CC"
+	select STM32_STM32WB15
+	select STM32WB_IO_CONFIG_C
+	select STM32_FLASH_CONFIG_C_320
+	---help---
+		STM32 WB Cortex M4, 320 Kb FLASH, 12+32+4 Kb SRAM
+
+config ARCH_CHIP_STM32WB30CE
+	bool "STM32WB30CE"
+	select STM32_STM32WB30
+	select STM32WB_IO_CONFIG_C
+	select STM32_FLASH_CONFIG_E
+	---help---
+		STM32 WB Cortex M4, 512 Kb FLASH, 32+32+32 Kb SRAM
+
+config ARCH_CHIP_STM32WB50CG
+	bool "STM32WB50CG"
+	select STM32_STM32WB50
+	select STM32WB_IO_CONFIG_C
+	select STM32_FLASH_CONFIG_G
+	---help---
+		STM32 WB Cortex M4, 1024 Kb FLASH, 64+32+32 Kb SRAM
+
+config ARCH_CHIP_STM32WB35CC
+	bool "STM32WB35CC"
+	select STM32_STM32WB35
+	select STM32WB_IO_CONFIG_C
+	select STM32_FLASH_CONFIG_C
+	---help---
+		STM32 WB Cortex M4, 256 Kb FLASH, 32+32+32 Kb SRAM
+
+config ARCH_CHIP_STM32WB35CE
+	bool "STM32WB35CE"
+	select STM32_STM32WB35
+	select STM32WB_IO_CONFIG_C
+	select STM32_FLASH_CONFIG_E
+	---help---
+		STM32 WB Cortex M4, 512 Kb FLASH, 32+32+32 Kb SRAM
+
+config ARCH_CHIP_STM32WB55CC
+	bool "STM32WB55CC"
+	select STM32_STM32WB55
+	select STM32WB_IO_CONFIG_C
+	select STM32_FLASH_CONFIG_C
+	---help---
+		STM32 WB Cortex M4, 256 Kb FLASH, 64+32+32 Kb SRAM
+
+config ARCH_CHIP_STM32WB55RC
+	bool "STM32WB55RC"
+	select STM32_STM32WB55
+	select STM32WB_IO_CONFIG_R
+	select STM32_FLASH_CONFIG_C
+	---help---
+		STM32 WB Cortex M4, 256 Kb FLASH, 64+32+32 Kb SRAM
+
+config ARCH_CHIP_STM32WB55VC
+	bool "STM32WB55VC"
+	select STM32_STM32WB55
+	select STM32WB_IO_CONFIG_V
+	select STM32_FLASH_CONFIG_C
+	---help---
+		STM32 WB Cortex M4, 256 Kb FLASH, 64+32+32 Kb SRAM
+
+config ARCH_CHIP_STM32WB55CE
+	bool "STM32WB55CE"
+	select STM32_STM32WB55
+	select STM32WB_IO_CONFIG_C
+	select STM32_FLASH_CONFIG_E
+	---help---
+		STM32 WB Cortex M4, 512 Kb FLASH, 192+32+32 Kb SRAM
+
+config ARCH_CHIP_STM32WB55RE
+	bool "STM32WB55RE"
+	select STM32_STM32WB55
+	select STM32WB_IO_CONFIG_R
+	select STM32_FLASH_CONFIG_E
+	---help---
+		STM32 WB Cortex M4, 512 Kb FLASH, 192+32+32 Kb SRAM
+
+config ARCH_CHIP_STM32WB55VE
+	bool "STM32WB55VE"
+	select STM32_STM32WB55
+	select STM32WB_IO_CONFIG_V
+	select STM32_FLASH_CONFIG_E
+	---help---
+		STM32 WB Cortex M4, 512 Kb FLASH, 192+32+32 Kb SRAM
+
+config ARCH_CHIP_STM32WB55VY
+	bool "STM32WB55VY"
+	select STM32_STM32WB55
+	select STM32WB_IO_CONFIG_V
+	select STM32_FLASH_CONFIG_Y
+	---help---
+		STM32 WB Cortex M4, 640 Kb FLASH, 192+32+32 Kb SRAM
+
+config ARCH_CHIP_STM32WB55CG
+	bool "STM32WB55CG"
+	select STM32_STM32WB55
+	select STM32WB_IO_CONFIG_C
+	select STM32_FLASH_CONFIG_G
+	---help---
+		STM32 WB Cortex M4, 1024 Kb FLASH, 192+32+32 Kb SRAM
+
+config ARCH_CHIP_STM32WB55RG
+	bool "STM32WB55RG"
+	select STM32_STM32WB55
+	select STM32WB_IO_CONFIG_R
+	select STM32_FLASH_CONFIG_G
+	---help---
+		STM32 WB Cortex M4, 1024 Kb FLASH, 192+32+32 Kb SRAM
+
+config ARCH_CHIP_STM32WB55VG
+	bool "STM32WB55VG"
+	select STM32_STM32WB55
+	select STM32WB_IO_CONFIG_V
+	select STM32_FLASH_CONFIG_G
+	---help---
+		STM32 WB Cortex M4, 1024 Kb FLASH, 192+32+32 Kb SRAM
+
+endchoice # STM32 WB Chip Selection
+
+# Chip product lines
+
+config STM32_STM32WB10
+	# STM32WB10 Value Line
+	bool
+	default n
+	select STM32_HAVE_TIM1
+	select STM32_HAVE_TIM2
+	select STM32_HAVE_TSC
+
+config STM32_STM32WB15
+	# STM32WB15 Standard Line
+	bool
+	default n
+	select STM32_HAVE_TIM1
+	select STM32_HAVE_TIM2
+	select STM32_HAVE_TSC
+	select STM32_HAVE_LPUART
+	select STM32_HAVE_SMPS if !ARCH_CHIP_STM32WB15CCUXE
+
+config STM32_STM32WB30
+	# STM32WB30 Value Line
+	bool
+	default n
+	select STM32_HAVE_HSI48
+	select STM32_HAVE_TIM1
+	select STM32_HAVE_TIM2
+	select STM32_HAVE_TIM16
+	select STM32_HAVE_TIM17
+
+config STM32_STM32WB50
+	# STM32WB50 Value Line
+	bool
+	default n
+	select STM32_HAVE_HSI48
+	select STM32_HAVE_TIM1
+	select STM32_HAVE_TIM2
+	select STM32_HAVE_TIM16
+	select STM32_HAVE_TIM17
+
+config STM32_STM32WB35
+	# STM32WB35 Standard Line
+	bool
+	default n
+	select STM32_HAVE_HSI48
+	select STM32_HAVE_DMA2
+	select STM32_HAVE_TIM1
+	select STM32_HAVE_TIM2
+	select STM32_HAVE_TIM16
+	select STM32_HAVE_TIM17
+	select STM32_HAVE_I2C3
+	select STM32_HAVE_QSPI
+	select STM32_HAVE_USB
+	select STM32_HAVE_SAI
+	select STM32_HAVE_COMP
+	select STM32_HAVE_SMPS
+
+config STM32_STM32WB55
+	# STM32WB55 Standard Line
+	bool
+	default n
+	select STM32_HAVE_HSI48
+	select STM32_HAVE_DMA2
+	select STM32_HAVE_TIM1
+	select STM32_HAVE_TIM2
+	select STM32_HAVE_TIM16
+	select STM32_HAVE_TIM17
+	select STM32_HAVE_I2C3
+	select STM32_HAVE_SPI2 if STM32WB_IO_CONFIG_R || STM32WB_IO_CONFIG_V
+	select STM32_HAVE_QSPI
+	select STM32_HAVE_USB
+	select STM32_HAVE_SAI
+	select STM32_HAVE_COMP
+	select STM32_HAVE_LPUART
+	select STM32_HAVE_TSC if STM32WB_IO_CONFIG_R || STM32WB_IO_CONFIG_V
+	select STM32_HAVE_LCD
+	select STM32_HAVE_SMPS
+
+# Pin/package configurations
+
+config STM32WB_IO_CONFIG_C
+	# UFQFPN48 package
+	bool
+	default n
+	select STM32_GPIO_HAVE_PORTE
+
+config STM32WB_IO_CONFIG_C_48E
+	# UFQFPN48E package
+	bool
+	default n
+	select STM32_GPIO_HAVE_PORTE
+
+config STM32WB_IO_CONFIG_C_49
+	# WLCSP49 package
+	bool
+	default n
+
+config STM32WB_IO_CONFIG_R
+	# VFQFPN68 package
+	bool
+	default n
+	select STM32_GPIO_HAVE_PORTD
+	select STM32_GPIO_HAVE_PORTE
+
+config STM32WB_IO_CONFIG_V
+	# WLCSP100 and UFBGA129 packages
+	bool
+	default n
+	select STM32_GPIO_HAVE_PORTD
+	select STM32_GPIO_HAVE_PORTE
+
+endif # ARCH_CHIP_STM32WB
